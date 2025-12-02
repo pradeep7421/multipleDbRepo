@@ -139,22 +139,22 @@ public class BookService {
 	public ShortURLEntity updateShortURLEntity(ShortURLModel body , String shortKey) {
 //	public Mono<ShortURLEntity> updateShortURLEntity(ShortURLModel body , String shortKey) throws InterruptedException {
 //		String apiUrl = tinyUrlServiceBaseUrl+shortUrl+"?isActive=true&length=2";
-		String apiUrl = UriComponentsBuilder.fromUriString(tinyUrlServiceBaseUrl + shortKey)
-		        .queryParam("isActive", true)
-		        .queryParam("length", 2)
-		        .toUriString();
+//		String apiUrl = UriComponentsBuilder.fromUriString(tinyUrlServiceBaseUrl + shortKey)
+//		        .queryParam("isActive", true)
+//		        .queryParam("length", 2)
+//		        .toUriString();
 	
-		HttpHeaders reqHeaders = new  HttpHeaders();
-		reqHeaders.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<ShortURLModel> httpEntity = new HttpEntity<>(body, reqHeaders);
+//		HttpHeaders reqHeaders = new  HttpHeaders();
+//		reqHeaders.setContentType(MediaType.APPLICATION_JSON);
+//		HttpEntity<ShortURLModel> httpEntity = new HttpEntity<>(body, reqHeaders);
 		
 //		.put method can send body and header but does not give response whereas 
 //		.exchange method sends req with body & headers and also provides response
 //		restTemplate.put(apiUrl, httpEntity); //it does not return anything
-		ResponseEntity<ShortURLEntity> response =restTemplate.
-				exchange(apiUrl, HttpMethod.PUT,httpEntity,ShortURLEntity.class);
-		System.out.println("shortURLEntity -  "+response.getBody());
-		return response.getBody();
+//		ResponseEntity<ShortURLEntity> response =restTemplate.
+//				exchange(apiUrl, HttpMethod.PUT,httpEntity,ShortURLEntity.class);
+//		System.out.println("shortURLEntity -  "+response.getBody());
+//		return response.getBody();
 
 //By using Map object as params in put and exchange method
 //		String url = tinyUrlServiceBaseUrl + "{shortKey}?isActive={isActive}&length={length}";
@@ -171,9 +171,9 @@ public class BookService {
 		
 		
 //      Calling Put Request of tinyUrl service By Feign Client 		
-//		ResponseEntity<ShortURLEntity> feignResponse =interf.updateShortURLEntity(body, shortKey, true, 2);
-//		System.out.println("shortURLEntity -  "+feignResponse.getBody());
-//		return feignResponse.getBody();
+		ResponseEntity<ShortURLEntity> feignResponse =interf.updateShortURLEntity(body, shortKey, true, 2);
+		System.out.println("shortURLEntity -  "+feignResponse.getBody());
+		return feignResponse.getBody();
 
 		//BY USING WEBCLIENT 
 //		String baseUrl = tinyUrlServiceBaseUrl;

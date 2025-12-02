@@ -74,14 +74,44 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
+		</dependency>  
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
-		</dependency>
+		</dependency>   
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+<!-- 	//When you want to exclude any dependency which comes from another library at run time before final jar gets created  --> 	
+<!--
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-tomcat</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+-->
+
+		<!-- for implementing circuit breaker  -->
+		<dependency>
+      		<groupId>org.springframework.boot</groupId>
+      		<artifactId>spring-boot-starter-actuator</artifactId>
+    	</dependency>
+
+		<dependency>
+      		<groupId>org.springframework.boot</groupId>
+      		<artifactId>spring-boot-starter-aop</artifactId>
+    	</dependency>
+
+		<dependency>
+    		<groupId>io.github.resilience4j</groupId>
+    		<artifactId>resilience4j-spring-boot2</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -99,6 +129,8 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+
+<!-- when you want to remove dependency from final jar but not at compile time or run time-->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -112,6 +144,8 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<!-- 	 <finalName>multipleDB_example</finalName>  -->
+		<finalName>${project.artifactId}-${project.version}-custom</finalName>
 	</build>
 
 </project>

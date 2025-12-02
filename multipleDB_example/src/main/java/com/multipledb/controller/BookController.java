@@ -3,6 +3,8 @@ package com.multipledb.controller;
 import java.net.URI;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,11 +27,14 @@ import com.multipledb.ExceptionHandler.BookNotFoundException;
 import com.multipledb.bookModel.Book;
 import com.multipledb.service.BookService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/book")
 public class BookController {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
 	@Autowired
 	private BookService bookService; 
@@ -104,6 +109,7 @@ public class BookController {
 //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx BELOW ARE CALLS FOR OTHER TINYURL MICROSERVICE XXXXXXXXXXXXXXXXXXXXXXXX
 
 	@GetMapping("/getShortUrl/{shortKey}")
+	@CircuitBreaker(name="tinyUrlCircuit" , fallbackMethod = "fallBackMethodForGet")
 	public ResponseEntity<String> getShortUrl(@PathVariable String shortKey) {
 		
 		String originalUrl = bookService.getOriginalUrl(shortKey);
@@ -111,8 +117,13 @@ public class BookController {
         headers.setLocation(URI.create("http://"+originalUrl));
 		return new ResponseEntity<>(headers, HttpStatus.FOUND);
 	}
-	
+	public ResponseEntity<String> fallBackMethodForGet(String shortKey, Throwable e){
+		logger.info("fallback method is executed because service is down: {}",e.getMessage());
+		return new ResponseEntity<>("cannot found original url with short key "+shortKey+ 
+				" .As service is down", HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 	@PutMapping("/updateShortUrlEntity/{shortKey}")
+	@CircuitBreaker(name="tinyUrlCircuit2" , fallbackMethod = "fallBackMethodForUpdate")
 	public ResponseEntity<?> updateShortURLEntity(@RequestBody ShortURLModel shortURLModel,
 			@PathVariable String shortKey) {
 		try {
@@ -132,6 +143,12 @@ public class BookController {
 	    	throw new BookNotFoundException(HttpStatus.NOT_FOUND.toString()
 					,"failed","Short url not found with ShortKey3: " + shortKey);
 	    }
+	}
+	
+	public ResponseEntity<?> fallBackMethodForUpdate(ShortURLModel shortURLModel, String shortKey, Throwable e){
+		logger.info("fallback method for update is executed because service is down: {}",e.getMessage());
+		return new ResponseEntity<>("cannot update original url with short key- "+shortKey+ 
+				" .As service is down", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
 //	@PutMapping("/updateShortUrlEntity/{shortKey}")

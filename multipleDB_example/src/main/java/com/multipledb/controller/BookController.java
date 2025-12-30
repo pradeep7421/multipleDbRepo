@@ -26,6 +26,7 @@ import com.multipledb.Entity.ShortURLModel;
 import com.multipledb.ExceptionHandler.BookNotFoundException;
 import com.multipledb.bookModel.Book;
 import com.multipledb.service.BookService;
+import com.multipledb.transactional.OverallTransactionalModel;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import reactor.core.publisher.Mono;
@@ -159,5 +160,11 @@ public class BookController {
 //	    return bookService.updateShortURLEntity(shortURLModel, shortKey)
 //	            .map(entity -> new ResponseEntity<>(entity, HttpStatus.CREATED));
 //	}
-
+	
+	//Transaction Management Method 
+	@PostMapping("/manageTransaction")
+	public ResponseEntity<Book> saveBookAndUserTransactionDemo(@RequestBody OverallTransactionalModel overallTransactionalModel) {
+		Book addedBook = bookService.saveBookAndUserTransactionDemo(overallTransactionalModel);
+		return ResponseEntity.status(HttpStatus.CREATED).body(addedBook);
+	}
 }

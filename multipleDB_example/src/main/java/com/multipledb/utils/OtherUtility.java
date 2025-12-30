@@ -36,24 +36,24 @@ public class OtherUtility {
 		
 		HttpHeaders reqHeaders = new  HttpHeaders();
 		reqHeaders.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<ShortURLModel> httpEntity = new HttpEntity<>(body, reqHeaders);
+		HttpEntity<ShortURLModel> httpEntityWithBodyAndHeader = new HttpEntity<>(body, reqHeaders);
 
 //POST REQUEST WITH or WITHOUT HTTPENTITY and REQUEST BODY						
 		ResponseEntity<ShortURLEntity> postResponse =
 		        restTemplate.exchange(
 		                apiUrl,
 		                HttpMethod.POST,
-		                httpEntity,
+		                httpEntityWithBodyAndHeader,
 		                ShortURLEntity.class
 		        );
 
 //GET REQUEST WITH or WITHOUT HTTPENTITY and REQUEST BODY				
-		HttpEntity<Void> httpEntityWithoutBody = new HttpEntity<>(reqHeaders);  // without requestbody
+		HttpEntity<Void> httpEntityWithHeaderAndWithoutBody = new HttpEntity<>(reqHeaders);  // without requestbody
 		ResponseEntity<ShortURLEntity> getResponse =
 		        restTemplate.exchange(
 		                apiUrl,
 		                HttpMethod.GET,
-		                httpEntityWithoutBody,
+		                httpEntityWithHeaderAndWithoutBody,
 		                ShortURLEntity.class
 		        );
 		ResponseEntity<ShortURLEntity> getResponseWithNullHttpEntity =
@@ -68,7 +68,7 @@ public class OtherUtility {
 			        restTemplate.exchange(
 			                apiUrl,
 			                HttpMethod.PUT,
-			                httpEntity, // request body is required for put request whivh is embedded in httpEntity
+			                httpEntityWithBodyAndHeader, // request body is required for put request whivh is embedded in httpEntity
 			                ShortURLEntity.class
 			        );	
 //DELETE REQUEST WITH or WITHOUT HTTPENTITY and REQUEST BODY		

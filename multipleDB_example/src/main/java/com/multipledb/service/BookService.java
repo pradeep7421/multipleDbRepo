@@ -5,8 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,10 +33,12 @@ import com.multipledb.ExceptionHandler.BookNotFoundException;
 import com.multipledb.bookModel.Book;
 import com.multipledb.bookRepo.BookRepo;
 import com.multipledb.feign.BookUserInterface;
+import com.multipledb.transactional.OverallTransactionalModel;
 import com.multipledb.userModel.Users;
 import com.multipledb.userRepo.UserRepo;
 import com.multipledb.utils.OtherUtility;
 
+import jakarta.transaction.Transactional;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -49,7 +57,8 @@ public class BookService {
 	private WebClient.Builder builder;
 	@Autowired
 	private OtherUtility otherUtility;
-
+	@Autowired
+	private CacheManager cacheManager;
 	public Book addBook(Book book) {
 		Users user = new Users();
 		user.setUserName("ravi");
@@ -58,14 +67,53 @@ public class BookService {
 		return bookRepo.save(book);
 	}
 
+	//unless = "#result.id < 1000  means do not cache if condition is true
+//	@Cacheable(key = "#bookId", value = "books", unless = "#result.id < 1000") //condition is checked after getting result from db will cache while result.Id>1000
+	@Cacheable(value = "books", key = "#bookId", condition = "#bookId > 1000") //condition is checked before method execution will cache if bookId >1000
 	public Book getBook(int bookId) {
+		System.out.println("Getting result from DB call with - "+bookId+" ---------------------");
 		return bookRepo.findById(bookId).get();
 	}
+
+	public Book getBook2(int bookId) {
+
+	    Cache cache = cacheManager.getCache("books");
+
+	    // 🔹 CACHE LOOKUP
+	    if (cache != null) {
+	        Book cachedBook = cache.get(bookId, Book.class);
+	        if (cachedBook != null) {
+	            System.out.println("Getting result from CACHE ---------------------");
+	            return cachedBook;
+	        }
+	    }
+
+	    // 🔹 CACHE MISS → DB CALL
+	    System.out.println("Cache MISS for bookId=" + bookId + " → DB call");
+	    Book book = bookRepo.findById(bookId)
+	            .orElseThrow(() -> new RuntimeException("Book not found"));
+
+	    // 🔹 UNLESS CONDITION (after DB call)
+	    if (book.getId() < 1000) {
+	        System.out.println("Skipping cache (unless condition: while bookId < 1000 skipping the cache storage)");
+	        return book;
+	    }
+
+	    // 🔹 UPDATE CACHE
+	    if (cache != null && book.getId() > 1000) {
+	        System.out.println("Updating cache after DB call if bookId >1000------------------");
+	        cache.put(bookId, book);
+	    }
+
+	    return book;
+	}
+
 
 	public List<Book> getAllBooks() {
 		return bookRepo.findAll();
 	}
 	
+	@CachePut(value = "books",key = "#bookId")
 	public Book updateBook(Book book, int bookId) {
 
         // fetch the existing book or throw error
@@ -84,9 +132,18 @@ public class BookService {
         existingBook.setAuthor(book.getAuthor());
 
         // save updated object
-        return bookRepo.save(existingBook);
+        Book updatedBook = bookRepo.save(existingBook);
+        
+        // 🔹 UPDATE CACHE
+        Cache cache = cacheManager.getCache("books");
+	    if (cache != null && book.getId() > 1000) {
+	        System.out.println("Updating cache after DB call if bookId >1000------------------");
+	        cache.put(bookId, updatedBook);
+	    }
+	    return updatedBook;
     }
 	
+	@CacheEvict(key = "#bookId",value = "books")
 	public Book deleteBook(int bookId) {
 
         // Find book by id or throw 404
@@ -98,7 +155,13 @@ public class BookService {
 
         // Delete the record
         bookRepo.delete(existingBook);
+        
+        Cache cache = cacheManager.getCache("books");
 
+		if (cache != null) {
+		    System.out.println("Deleting entry from CACHE ---------------------");
+		    cache.evict(bookId);
+		}
         // Return deleted object as response
         return existingBook;
     }
@@ -211,6 +274,19 @@ public class BookService {
 	public void requestsWithDifferentHttpMethodsByExchangeMethod(ShortURLModel body , String shortKey) {	
 		 otherUtility.requestsWithDifferentHttpMethodsByExchangeMethod(body,shortKey);
 		 otherUtility.requestsWithDifferentHttpMethodsWithoutExchange(body,shortKey);	
+	}
+
+	@Transactional
+	public Book saveBookAndUserTransactionDemo(OverallTransactionalModel overallTransactionalModel) {
+	
+		Book addedBook = bookRepo.save(overallTransactionalModel.getBook());
+		
+		if(StringUtils.isBlank(overallTransactionalModel.getUser().getUserName())) {
+			throw new BookNotFoundException(HttpStatus.INTERNAL_SERVER_ERROR.toString()
+					,"failed","Book Name should not be blank");
+		}
+		userRepo.save(overallTransactionalModel.getUser());
+		return addedBook;
 	}
 	
 }
